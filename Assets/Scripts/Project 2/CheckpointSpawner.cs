@@ -1,24 +1,38 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class CheckpointSpawner : MonoBehaviour
 {
-    public TextAsset file;
+    public static CheckpointSpawner Instance;
 
+    [Header("References")]
+    public TextAsset file;
     public GameObject checkpointPrefab;
 
+    public List<GameObject> checkpoints = new List<GameObject>();
     private List<Vector3> checkpointPositions = new List<Vector3>();
 
-
-    void Start()
+    void Awake()
     {
+        if (Instance == null)
+        {
+            Instance = this;
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
+
         if (file != null) 
         {
             checkpointPositions = ParseFile();
             foreach (Vector3 vec in checkpointPositions)
             {
-                Instantiate(checkpointPrefab, vec, Quaternion.identity);
+                GameObject checkpoint = Instantiate(checkpointPrefab, vec, Quaternion.identity);
+                checkpoints.Add(checkpoint);
             }
+            checkpoints[0].GetComponent<Renderer>().material.color = Color.red;
         }
     }
 

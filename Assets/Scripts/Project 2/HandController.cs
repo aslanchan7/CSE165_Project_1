@@ -1,20 +1,31 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.XR.Hands;
+using UnityEngine.XR.Hands.Gestures;
+using UnityEngine.XR.Hands.Samples.GestureSample;
 
 public class HandController : MonoBehaviour
 {
-    XRHandSubsystem m_HandSubsystem;
 
-    public GameObject droneObject;
-    public float moveSpeed = 10.0f;
+    [Header("Hand Tracking Settings")]
+    [SerializeField] XRHandTrackingEvents leftHandTrackingEvents;
+    [SerializeField] XRHandTrackingEvents rightHandTrackingEvents;
+    [SerializeField] XRHandShape[] handShapes;
+    [SerializeField] float gestureDetectionInterval = 0.1f;
+    [SerializeField] float minGestureThreshold = 0.9f;
+    [SerializeField] HandShapeCompletenessCalculator handShapeCompletenessCalculator;
+
+    [Header("References")]
+    [SerializeField] DroneController droneController;
+
+    // Private variables
+    private XRHandSubsystem m_HandSubsystem;
+    private float timeOfLastGestureDetection;
 
     void Start()
     {
         var handSubsystems = new List<XRHandSubsystem>();
         SubsystemManager.GetSubsystems(handSubsystems);
-
-        Debug.Log($"Found {handSubsystems.Count} hand subsystems.");
 
         for (var i = 0; i < handSubsystems.Count; ++i)
         {
@@ -25,8 +36,6 @@ public class HandController : MonoBehaviour
                 break;
             }
         }
-
-        Debug.Log(m_HandSubsystem);
 
         if (m_HandSubsystem != null)
             m_HandSubsystem.updatedHands += OnUpdatedHands;
@@ -49,19 +58,32 @@ public class HandController : MonoBehaviour
                 break;
         }
     }
-
     public void OnJointsUpdated(XRHandJointsUpdatedEventArgs args)
     {
+
         if (args.hand.GetJoint(XRHandJointID.IndexTip).TryGetPose(out var pose))
         {
-            Debug.Log($"Wrist position: {pose.position}");
-            Debug.Log($"Wrist rotation: {pose.rotation.eulerAngles}");
+            Debug.Log($"Index rotation: {pose.rotation.eulerAngles}");
 
-            Vector3 moveDir = pose.rotation * Vector3.forward;
-            moveDir = moveDir.normalized;
-
-            droneObject.transform.position += moveDir * Time.deltaTime * moveSpeed;
+            droneController.MoveDir = pose.rotation * Vector3.forward;
         }
+
+        if(Time.time - timeOfLastGestureDetection > gestureDetectionInterval)
+        {
+            foreach (var handShape in handShapes)
+            {
+                handShapeCompletenessCalculator.TryCalculateHandShapeCompletenessScore(args.hand, handShape, out float completenessScore);
+                if (completenessScore > minGestureThreshold)
+                {
+                    Debug.Log($"Detected gesture: {handShape.name} with completeness: {completenessScore}");
+                    // Perform actions based on the detected gesture
+                    droneController.MoveDir = Vector3.zero;
+                }
+            }
+
+            timeOfLastGestureDetection = Time.time;            
+        }
+        
     }
 }
 
