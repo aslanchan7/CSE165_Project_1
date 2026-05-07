@@ -76,7 +76,16 @@ public class DroneController : MonoBehaviour
      IEnumerator RespawnCountdown()
     {
         isRespawning = true;
-        yield return new WaitForSeconds(3f);
+        int countdown = 3;
+        countdownText.gameObject.SetActive(true);
+        countdownText.text = countdown.ToString();
+        while (countdown > 0)
+        {
+            yield return new WaitForSeconds(1f);
+            countdown--;
+            countdownText.text = countdown.ToString();
+        }
+        countdownText.gameObject.SetActive(false);
         isRespawning = false;
     }
 
