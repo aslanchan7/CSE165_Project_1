@@ -1,4 +1,5 @@
 using System.Collections;
+using TMPro;
 using UnityEngine;
 
 public class DroneController : MonoBehaviour
@@ -11,6 +12,8 @@ public class DroneController : MonoBehaviour
     [SerializeField] Transform vrPlayer;
     [SerializeField] Transform droneModel;
     [SerializeField] WaypointIndicator waypointIndicator;
+    [SerializeField] GameObject checkpointNotif;
+    [SerializeField] TextMeshProUGUI countdownText;
 
     [Header("Movement Config")]
     [SerializeField] float moveSpeed = 10f;
@@ -30,7 +33,7 @@ public class DroneController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (!isRespawning)
+        if (!isRespawning && RaceManager.Instance.isGameStarted)
         {
             MoveDir = MoveDir.normalized;
             vrPlayer.position += moveSpeed * Time.deltaTime * MoveDir;
@@ -49,18 +52,18 @@ public class DroneController : MonoBehaviour
         }
         else if (other.CompareTag("Checkpoint"))
         {
-            // TODO: Update last checkpoint position, and update next checkpoint position
-            Debug.Log("Checkpoint reached!");
-            if (other.gameObject != CheckpointSpawner.Instance.checkpoints[NextCheckpointIndex] ||
-                NextCheckpointIndex >= CheckpointSpawner.Instance.checkpoints.Count)
+            if (other.gameObject != CheckpointSpawner.Instance.checkpoints[NextCheckpointIndex])
             {
                 return;
             }
+            StartCoroutine(CheckpointNotification());
             LastCheckpointPos = other.transform.position;
             other.gameObject.SetActive(false);
             NextCheckpointIndex++;
             if (NextCheckpointIndex >= CheckpointSpawner.Instance.checkpoints.Count)
             {
+                waypointIndicator.target = null;
+                RaceManager.Instance.isRaceComplete = true;
                 return;
             }
 
@@ -75,5 +78,27 @@ public class DroneController : MonoBehaviour
         isRespawning = true;
         yield return new WaitForSeconds(3f);
         isRespawning = false;
+    }
+
+    IEnumerator CheckpointNotification()
+    {
+        checkpointNotif.SetActive(true);
+        yield return new WaitForSeconds(1f);
+        checkpointNotif.SetActive(false);
+    }
+
+    public IEnumerator GameCountdown()
+    {
+        int countdown = 3;
+        countdownText.gameObject.SetActive(true);
+        countdownText.text = countdown.ToString();
+        while (countdown > 0)
+        {
+            yield return new WaitForSeconds(1f);
+            countdown--;
+            countdownText.text = countdown.ToString();
+        }
+        RaceManager.Instance.isGameStarted = true;
+        countdownText.gameObject.SetActive(false);
     }
 }

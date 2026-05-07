@@ -73,11 +73,18 @@ public class HandController : MonoBehaviour
             foreach (var handShape in handShapes)
             {
                 handShapeCompletenessCalculator.TryCalculateHandShapeCompletenessScore(args.hand, handShape, out float completenessScore);
-                if (completenessScore > minGestureThreshold)
+                bool isDetected = completenessScore >= minGestureThreshold;
+                // Open Hand Shape: Stops Movement
+                if (isDetected && handShape == handShapes[0])
                 {
                     Debug.Log($"Detected gesture: {handShape.name} with completeness: {completenessScore}");
                     // Perform actions based on the detected gesture
                     droneController.MoveDir = Vector3.zero;
+                }
+                // Thumbs Up Hand Shape: Starts Game
+                else if (isDetected && handShape == handShapes[1])
+                {
+                    droneController.StartCoroutine(droneController.GameCountdown());
                 }
             }
 
