@@ -11,9 +11,12 @@ public class HandController : MonoBehaviour
     [SerializeField] XRHandTrackingEvents leftHandTrackingEvents;
     [SerializeField] XRHandTrackingEvents rightHandTrackingEvents;
     [SerializeField] XRHandShape[] handShapes;
-    [SerializeField] float gestureDetectionInterval = 0.1f;
+    [SerializeField] float gestureDetectionInterval = 0f;
     [SerializeField] float minGestureThreshold = 0.9f;
     [SerializeField] HandShapeCompletenessCalculator handShapeCompletenessCalculator;
+
+    [Header("Camera Settings")]
+    [SerializeField] float cameraChangeInterval = 1f;
 
     [Header("References")]
     [SerializeField] DroneController droneController;
@@ -21,6 +24,8 @@ public class HandController : MonoBehaviour
     // Private variables
     private XRHandSubsystem m_HandSubsystem;
     private float timeOfLastGestureDetection;
+    private float timeOfLastCameraChange = 0f;
+    private int currentCameraIndex = 0;
 
     void Start()
     {
@@ -60,8 +65,8 @@ public class HandController : MonoBehaviour
     }
     public void OnJointsUpdated(XRHandJointsUpdatedEventArgs args)
     {
-
-        if (args.hand.GetJoint(XRHandJointID.IndexTip).TryGetPose(out var pose))
+        // Only Move with Right Index Finger
+        if (args.hand.handedness == Handedness.Right && args.hand.GetJoint(XRHandJointID.IndexTip).TryGetPose(out var pose))
         {
             Debug.Log($"Index rotation: {pose.rotation.eulerAngles}");
 
@@ -75,16 +80,35 @@ public class HandController : MonoBehaviour
                 handShapeCompletenessCalculator.TryCalculateHandShapeCompletenessScore(args.hand, handShape, out float completenessScore);
                 bool isDetected = completenessScore >= minGestureThreshold;
                 // Open Hand Shape: Stops Movement
-                if (isDetected && handShape == handShapes[0])
+                if (isDetected && handShape == handShapes[0] && args.hand.handedness == Handedness.Right)
                 {
                     Debug.Log($"Detected gesture: {handShape.name} with completeness: {completenessScore}");
                     // Perform actions based on the detected gesture
                     droneController.MoveDir = Vector3.zero;
                 }
                 // Thumbs Up Hand Shape: Starts Game
-                else if (isDetected && handShape == handShapes[1])
+                else if (isDetected && handShape == handShapes[1] && args.hand.handedness == Handedness.Right && !RaceManager.Instance.isGameStarted)
                 {
                     droneController.StartCoroutine(droneController.GameCountdown());
+                }
+                else if (isDetected && handShape == handShapes[1] && args.hand.handedness == Handedness.Left)
+                {
+                    if (Time.time - timeOfLastCameraChange > cameraChangeInterval)
+                    {
+                        currentCameraIndex = (currentCameraIndex + 1) % 3;
+                        if (currentCameraIndex == 2)
+                        {
+                            droneController.transform.GetChild(0).gameObject.SetActive(false);
+                        }
+                        else
+                        {
+                            droneController.transform.GetChild(0).gameObject.SetActive(true);
+                            droneController.is3rdPersonView = currentCameraIndex == 1;
+                        }
+
+                        timeOfLastCameraChange = Time.time; 
+                    }
+
                 }
             }
 

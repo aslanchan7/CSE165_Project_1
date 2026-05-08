@@ -12,11 +12,18 @@ public class DroneController : MonoBehaviour
     [SerializeField] Transform vrPlayer;
     [SerializeField] Transform droneModel;
     [SerializeField] WaypointIndicator waypointIndicator;
-    [SerializeField] GameObject checkpointNotif;
+    [SerializeField] TextMeshProUGUI checkpointNotif;
     [SerializeField] TextMeshProUGUI countdownText;
 
     [Header("Movement Config")]
     [SerializeField] float moveSpeed = 10f;
+
+    [Header("3rd Person View Config")]
+    public bool is3rdPersonView = false;
+    public float orbitRadius = 4f;
+
+    private Vector3 origDroneOffset;
+    private Vector3 lastDroneOffset;
 
     private bool isRespawning = false;
 
@@ -28,6 +35,9 @@ public class DroneController : MonoBehaviour
         LastCheckpointPos = transform.position;
         NextCheckpointIndex = 0;
         waypointIndicator.target = CheckpointSpawner.Instance.checkpoints[NextCheckpointIndex];
+        origDroneOffset = droneModel.localPosition;
+        lastDroneOffset = new Vector3(origDroneOffset.x, 0, origDroneOffset.z);
+        Debug.Log(origDroneOffset);
     }
 
     // Update is called once per frame
@@ -37,6 +47,25 @@ public class DroneController : MonoBehaviour
         {
             MoveDir = MoveDir.normalized;
             vrPlayer.position += moveSpeed * Time.deltaTime * MoveDir;
+        }
+        if (is3rdPersonView && MoveDir != Vector3.zero)
+        {
+            Vector3 offsetDir = new Vector3(MoveDir.x, 0f, MoveDir.z).normalized;
+            Vector3 targetPos = new Vector3(
+                offsetDir.x * orbitRadius,
+                0f,
+                offsetDir.z * orbitRadius
+            );
+            droneModel.localPosition = Vector3.Lerp(droneModel.localPosition, targetPos, 5f * Time.deltaTime);
+            lastDroneOffset = droneModel.localPosition;
+        }
+        else if (is3rdPersonView && MoveDir == Vector3.zero)
+        {
+            droneModel.localPosition = Vector3.Lerp(droneModel.localPosition, lastDroneOffset, 5f * Time.deltaTime);
+        }
+        else
+        {
+            droneModel.localPosition = origDroneOffset;
         }
     }
 
@@ -60,10 +89,13 @@ public class DroneController : MonoBehaviour
             LastCheckpointPos = other.transform.position;
             other.gameObject.SetActive(false);
             NextCheckpointIndex++;
+            // Handles Race Finish
             if (NextCheckpointIndex >= CheckpointSpawner.Instance.checkpoints.Count)
             {
                 waypointIndicator.target = null;
                 RaceManager.Instance.isRaceComplete = true;
+                checkpointNotif.text = "Race Finish!";
+                StartCoroutine(CheckpointNotification());
                 return;
             }
 
@@ -91,9 +123,9 @@ public class DroneController : MonoBehaviour
 
     IEnumerator CheckpointNotification()
     {
-        checkpointNotif.SetActive(true);
+        checkpointNotif.gameObject.SetActive(true);
         yield return new WaitForSeconds(1f);
-        checkpointNotif.SetActive(false);
+        checkpointNotif.gameObject.SetActive(false);
     }
 
     public IEnumerator GameCountdown()

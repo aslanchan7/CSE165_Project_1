@@ -1,10 +1,14 @@
+using TMPro;
 using UnityEngine;
 
 public class WaypointIndicator : MonoBehaviour
 {
+    [Header("References")]
     public Transform vrPlayer;
     public Transform playerCamera;
     public Transform waypointArrow;
+    public TextMeshProUGUI distanceText;
+
     public GameObject target;
     public float rotationSpeed = 360f;
     // Update is called once per frame
@@ -20,6 +24,7 @@ public class WaypointIndicator : MonoBehaviour
         Vector3 targetPos = target.transform.position;
 
         Vector3 pointDir = targetPos - playerPos;
+        distanceText.text = $"{pointDir.magnitude:F1}m";
 
         Quaternion worldRotToWaypoint = Quaternion.LookRotation(pointDir.normalized, playerCamera.up);
         Quaternion relativeRotation = Quaternion.Inverse(playerCamera.rotation) * worldRotToWaypoint;
