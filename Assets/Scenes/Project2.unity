@@ -658,7 +658,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 1457228091}
-        m_TargetAssemblyTypeName: HandData, Assembly-CSharp
+        m_TargetAssemblyTypeName: HandController, Assembly-CSharp
         m_MethodName: OnJointsUpdated
         m_Mode: 0
         m_Arguments:
@@ -2321,7 +2321,7 @@ MonoBehaviour:
   waypointIndicator: {fileID: 486832984}
   checkpointNotif: {fileID: 58342901}
   countdownText: {fileID: 1099609911}
-  moveSpeed: 75
+  moveSpeed: 50
   is3rdPersonView: 0
   orbitRadius: 4
 --- !u!135 &1472116544
