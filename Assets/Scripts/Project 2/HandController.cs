@@ -23,7 +23,8 @@ public class HandController : MonoBehaviour
 
     // Private variables
     private XRHandSubsystem m_HandSubsystem;
-    private float timeOfLastGestureDetection;
+    private float timeOfLastGestureDetectionRight;
+    private float timeOfLastGestureDetectionLeft;
     private float timeOfLastCameraChange = 0f;
     private int currentCameraIndex = 0;
 
@@ -70,19 +71,24 @@ public class HandController : MonoBehaviour
         {
             Debug.Log($"Index rotation: {pose.rotation.eulerAngles}");
 
-            droneController.MoveDir = pose.rotation * Vector3.forward;
+            Vector3 worldDir = pose.rotation * Vector3.forward;
+            droneController.MoveDir = droneController.vrPlayer.transform.InverseTransformDirection(worldDir);
         }
 
-        if(Time.time - timeOfLastGestureDetection > gestureDetectionInterval)
+        float lastDetection = args.hand.handedness == Handedness.Right
+        ? timeOfLastGestureDetectionRight
+        : timeOfLastGestureDetectionLeft;
+
+        if (Time.time - lastDetection > gestureDetectionInterval)
         {
             foreach (var handShape in handShapes)
             {
                 handShapeCompletenessCalculator.TryCalculateHandShapeCompletenessScore(args.hand, handShape, out float completenessScore);
                 bool isDetected = completenessScore >= minGestureThreshold;
+                Debug.Log($"Detected gesture: [{args.hand.handedness}] {handShape.name} with completeness: {completenessScore}");
                 // Open Hand Shape: Stops Movement
                 if (isDetected && handShape == handShapes[0] && args.hand.handedness == Handedness.Right)
                 {
-                    Debug.Log($"Detected gesture: {handShape.name} with completeness: {completenessScore}");
                     // Perform actions based on the detected gesture
                     droneController.MoveDir = Vector3.zero;
                 }
@@ -112,7 +118,10 @@ public class HandController : MonoBehaviour
                 }
             }
 
-            timeOfLastGestureDetection = Time.time;            
+            if (args.hand.handedness == Handedness.Right)
+                timeOfLastGestureDetectionRight = Time.time;
+            else
+                timeOfLastGestureDetectionLeft = Time.time;
         }
         
     }

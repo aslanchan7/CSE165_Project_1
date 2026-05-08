@@ -9,7 +9,7 @@ public class DroneController : MonoBehaviour
     [HideInInspector] public int NextCheckpointIndex;
 
     [Header("References")]
-    [SerializeField] Transform vrPlayer;
+    [SerializeField] public Transform vrPlayer;
     [SerializeField] Transform droneModel;
     [SerializeField] WaypointIndicator waypointIndicator;
     [SerializeField] TextMeshProUGUI checkpointNotif;
@@ -50,7 +50,8 @@ public class DroneController : MonoBehaviour
         }
         if (is3rdPersonView && MoveDir != Vector3.zero)
         {
-            Vector3 offsetDir = new Vector3(MoveDir.x, 0f, MoveDir.z).normalized;
+            Vector3 worldMoveDir = vrPlayer.transform.TransformDirection(MoveDir);
+            Vector3 offsetDir = new Vector3(worldMoveDir.x, 0f, worldMoveDir.z).normalized;
             Vector3 targetPos = new Vector3(
                 offsetDir.x * orbitRadius,
                 0f,
