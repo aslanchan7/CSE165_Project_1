@@ -22,7 +22,12 @@ public class StupidDebugScript : MonoBehaviour
         isPoseActive = false;
     }
 
-    
+    public void Reset()
+    {
+        agentRb.transform.localPosition = new Vector3(0f,0f,1f);
+    }
+
+
     void Start()
     {
         agentRb.transform.localPosition = new(agentRb.transform.localPosition.x, 0f, agentRb.transform.localPosition.z);
